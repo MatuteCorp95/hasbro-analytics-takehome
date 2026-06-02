@@ -1,0 +1,205 @@
+version: 2
+
+models:
+  # ===== CORE DIMENSIONS =====
+  - name: dim_product
+    description: "Single row per product SKU. PLM wins for master attributes, ERP wins for transactional fields (unit_cost, list_price, case_pack_qty), hierarchy table wins for division and standardized brand/franchise/category. Source provenance flags expose where each value came from."
+    columns:
+      - name: product_sku
+        description: "Standardized SKU in SKU-NNNN format. Unique primary key."
+        tests:
+          - not_null
+          - unique
+      - name: product_name
+        tests: [not_null]
+      - name: lifecycle_status
+        tests:
+          - accepted_values:
+              values: ['active','discontinued','inactive','launched']
+      - name: is_in_plm
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: is_in_erp
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: is_in_hierarchy
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: dim_customer
+    description: "Single row per customer ID. CUST-006 duplicates collapsed using shorter-country-code-wins tiebreaker."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: is_active
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: dim_supplier
+    description: "Single row per supplier ID. SUP-004 duplicates collapsed with preference for records with non-NULL lead_time_days."
+    columns:
+      - name: supplier_id
+        tests:
+          - not_null
+          - unique
+      - name: is_preferred
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: dim_warehouse
+    description: "Single row per warehouse ID. WH-001/WH001 duplicates collapsed with preference for IANA-format timezones."
+    columns:
+      - name: warehouse_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_carrier
+    description: "Single row per carrier ID. CAR-004 duplicates collapsed with preference for non-NULL transit days."
+    columns:
+      - name: carrier_id
+        tests:
+          - not_null
+          - unique
+
+  # ===== COMMERCIAL FACTS =====
+  - name: fct_sales_orders
+    description: "Order-line grain. Orphan customers and SKUs preserved with is_known_* flags. Relationships tested against dims only for known FKs."
+    columns:
+      - name: order_id
+        tests: [not_null]
+      - name: customer_id
+        tests:
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_id
+              config:
+                where: "is_known_customer = 1"
+      - name: product_sku
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_sku
+              config:
+                where: "is_known_product = 1"
+      - name: fulfillment_status
+        tests:
+          - accepted_values:
+              values: ['fully_fulfilled','partially_fulfilled','unfulfilled','cancelled','open','units_unknown']
+
+  - name: fct_retail_pos
+    description: "Weekly retailer POS data. Sell-through-rate and pos-units-per-store calculated."
+    columns:
+      - name: retailer_id
+        tests: [not_null]
+      - name: product_sku
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_sku
+              config:
+                where: "is_known_product = 1"
+
+  # ===== SUPPLY CHAIN FACTS =====
+  - name: fct_purchase_orders
+    description: "PO-line grain. Lead time variance, overdue flag, received-before-created flag derived."
+    columns:
+      - name: po_id
+        tests: [not_null]
+      - name: supplier_id
+        tests:
+          - relationships:
+              to: ref('dim_supplier')
+              field: supplier_id
+              config:
+                where: "is_known_supplier = 1"
+      - name: product_sku
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_sku
+              config:
+                where: "is_known_product = 1"
+      - name: warehouse_id
+        tests:
+          - relationships:
+              to: ref('dim_warehouse')
+              field: warehouse_id
+              config:
+                where: "is_known_warehouse = 1"
+      - name: po_status
+        tests:
+          - accepted_values:
+              values: ['open','closed']
+
+  - name: fct_shipments
+    description: "Shipment grain. On-time flag derived from contracted vs actual transit days."
+    columns:
+      - name: shipment_id
+        tests: [not_null]
+      - name: carrier_id
+        tests:
+          - relationships:
+              to: ref('dim_carrier')
+              field: carrier_id
+              config:
+                where: "is_known_carrier = 1"
+
+  - name: fct_inventory_snapshots
+    description: "Daily inventory grain (date + warehouse + SKU). Negative inventory preserved and flagged. Prelaunch SKUs excluded from stockout flags."
+    columns:
+      - name: warehouse_id
+        tests:
+          - relationships:
+              to: ref('dim_warehouse')
+              field: warehouse_id
+              config:
+                where: "is_known_warehouse = 1"
+      - name: product_sku
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_sku
+              config:
+                where: "is_known_product = 1"
+
+  # ===== MARKETING FACTS =====
+  - name: fct_marketing_performance
+    description: "Daily campaign performance. CTR, CPC, CPM, ROAS derived. FaceSpace/Facebook/Face Space variants collapsed via taxonomy."
+    columns:
+      - name: campaign_id
+        tests: [not_null]
+
+  # ===== DERIVED MARTS =====
+  - name: mart_inventory_weeks_of_supply
+    description: "Per-SKU weeks of supply from average weekly POS velocity. Health bands: <4 weeks low_coverage, 4-26 healthy, >26 overstock."
+    columns:
+      - name: product_sku
+        tests:
+          - not_null
+          - unique
+      - name: supply_health_status
+        tests:
+          - accepted_values:
+              values: ['stockout','low_coverage','healthy','overstock','no_velocity_data']
+
+  - name: mart_campaign_summary
+    description: "Campaign-level aggregation with overall CTR, ROAS, cost-per-conversion."
+    columns:
+      - name: campaign_id
+        tests: [not_null]
+
+  - name: mart_product_performance
+    description: "Unified product performance — one row per SKU tying sell-in (orders), sell-through (POS), inventory position, weeks of supply, marketing investment, and inbound supply. The gold-layer mart that demonstrates cross-domain analytics from a consistent product key."
+    columns:
+      - name: product_sku
+        tests:
+          - not_null
+          - unique

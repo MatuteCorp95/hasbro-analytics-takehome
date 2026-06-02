@@ -7,7 +7,7 @@ standardized as (
         trim(s.shipment_id)                                                  as shipment_id,
         case
             when nullif(trim(s.event_timestamp),'') is null then null
-            when s.event_timestamp glob '____-__-__ __:__*' then trim(s.event_timestamp)
+            when s.event_timestamp like '____-__-__ __:__%' then trim(s.event_timestamp)
             else null
         end                                                                  as event_timestamp,
         trim(s.event_timestamp)                                              as event_timestamp_raw,

@@ -1,0 +1,113 @@
+version: 2
+
+models:
+  - name: stg_taxonomy_lookup
+    description: "Cleaned canonical mappings from raw source values to standardized values. Extended with a discovered_gaps block for variants the source taxonomy doesn't cover. The mapping_source column makes provenance auditable."
+    columns:
+      - name: mapping_type
+        description: "Category of mapping (sku_normalization, channel, region, country, platform, supplier, status, uom, warehouse_normalization)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['sku_normalization','warehouse_normalization','channel','region','country','platform','supplier','status','uom']
+      - name: raw_value
+        tests: [not_null]
+      - name: standard_value
+        tests: [not_null]
+      - name: mapping_source
+        description: "'source_taxonomy' if from the seeded taxonomy table; 'discovered_gap' if added during this build."
+        tests:
+          - accepted_values:
+              values: ['source_taxonomy','discovered_gap']
+
+  - name: stg_products
+    description: "Standardized product records from PLM and ERP. Both source-system rows preserved — resolution happens in dim_product."
+    columns:
+      - name: product_sku
+        tests: [not_null]
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['PLM','ERP']
+      - name: lifecycle_status
+        tests:
+          - accepted_values:
+              values: ['active','discontinued','inactive','launched']
+
+  - name: stg_product_hierarchy
+    description: "SCD2-style hierarchy with effective dates. Overlapping ranges flagged via dq_date_violations."
+    columns:
+      - name: product_sku
+        tests: [not_null]
+
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        tests: [not_null]
+
+  - name: stg_sales_orders
+    columns:
+      - name: order_id
+        tests: [not_null]
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['shipped','partial','cancelled','open']
+
+  - name: stg_retail_pos
+    columns:
+      - name: retailer_id
+        tests: [not_null]
+
+  - name: stg_marketing_campaigns
+    columns:
+      - name: campaign_id
+        tests: [not_null]
+
+  - name: stg_marketing_performance
+    columns:
+      - name: campaign_id
+        tests: [not_null]
+
+  - name: stg_inventory_snapshots
+    columns:
+      - name: warehouse_id
+        tests: [not_null]
+      - name: product_sku
+        tests: [not_null]
+
+  - name: stg_warehouse_locations
+    columns:
+      - name: warehouse_id
+        tests: [not_null]
+
+  - name: stg_suppliers
+    columns:
+      - name: supplier_id
+        tests: [not_null]
+
+  - name: stg_purchase_orders
+    columns:
+      - name: po_id
+        tests: [not_null]
+      - name: po_status
+        tests:
+          - accepted_values:
+              values: ['open','closed']
+
+  - name: stg_shipments
+    columns:
+      - name: shipment_id
+        tests: [not_null]
+
+  - name: stg_shipment_events
+    description: "Carrier event log. Malformed timestamps nulled but preserved in event_timestamp_raw."
+    columns:
+      - name: shipment_id
+        tests: [not_null]
+
+  - name: stg_carrier_performance
+    columns:
+      - name: carrier_id
+        tests: [not_null]

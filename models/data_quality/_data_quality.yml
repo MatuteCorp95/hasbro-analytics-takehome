@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: dq_orphan_records
+    description: "Unified report of all foreign-key violations across the gold layer. Issue types include unknown_customer, unknown_product, unknown_supplier, unknown_warehouse, unknown_order, unknown_campaign, hierarchy_without_product. Used as the FK quarantine surface so analysts can see what was preserved-but-unmatched."
+    columns:
+      - name: source_model
+        tests: [not_null]
+      - name: issue_type
+        tests: [not_null]
+
+  - name: dq_date_violations
+    description: "Date-logic violations: ship-before-order, received-before-created, delivery-before-ship, overdue POs, late deliveries, SCD overlaps, malformed timestamps."
+    columns:
+      - name: source_model
+        tests: [not_null]
+      - name: issue_type
+        tests: [not_null]
+
+  - name: dq_value_violations
+    description: "Business-rule and value violations: negative inventory, oversold positions, stockouts, below-safety-stock, negative POS units, negative clicks, invalid ordered_units, missing tracking numbers."
+    columns:
+      - name: source_model
+        tests: [not_null]
+      - name: issue_type
+        tests: [not_null]
