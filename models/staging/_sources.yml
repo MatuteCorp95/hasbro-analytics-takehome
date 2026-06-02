@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Source extracts from operational systems — PLM, ERP, marketing platforms, WMS, TMS, retailer POS feeds. Intentionally imperfect for the assessment."
+    schema: main
+    tables:
+      - name: products_raw
+        description: "Product master records from PLM and ERP."
+      - name: product_hierarchy_raw
+        description: "Product hierarchy with effective dates — division, brand family, franchise, category."
+      - name: customers_raw
+        description: "Customer accounts with channel, region, country, and tier."
+      - name: sales_orders_raw
+        description: "Outbound customer orders, one row per order line."
+      - name: retail_pos_raw
+        description: "Weekly point-of-sale feed from retailers — sell-through to consumers."
+      - name: marketing_campaigns_raw
+        description: "Marketing campaigns by platform, with budget and target product."
+      - name: marketing_performance_raw
+        description: "Daily performance metrics per campaign — impressions, clicks, spend, conversions."
+      - name: taxonomy_lookup_raw
+        description: "Reference mappings from raw source values to standardized names across SKUs, channels, regions, countries, platforms, suppliers, statuses, and units of measure."
+      - name: inventory_snapshots_raw
+        description: "Point-in-time inventory positions by warehouse and SKU."
+      - name: warehouse_locations_raw
+        description: "Warehouses and distribution centers."
+      - name: suppliers_raw
+        description: "Supplier accounts with region, country, preferred status, and lead time."
+      - name: purchase_orders_raw
+        description: "Inbound purchase orders to suppliers."
+      - name: shipments_raw
+        description: "Outbound shipments from warehouses to customers."
+      - name: shipment_events_raw
+        description: "Carrier event log per shipment — pickup, in-transit, delivered."
+      - name: carrier_performance_raw
+        description: "Carriers with service level, region, and contracted transit days."

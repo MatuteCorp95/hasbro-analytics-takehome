@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# OS / editor
+.DS_Store
+.vscode/
+*.swp
+
+# Secrets (profiles.yml lives in ~/.dbt not the repo — but just in case)
+profiles.yml
