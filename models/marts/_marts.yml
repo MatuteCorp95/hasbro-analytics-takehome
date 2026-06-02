@@ -20,14 +20,17 @@ models:
         tests:
           - accepted_values:
               values: [0, 1]
+              quote: false
       - name: is_in_erp
         tests:
           - accepted_values:
               values: [0, 1]
+              quote: false
       - name: is_in_hierarchy
         tests:
           - accepted_values:
               values: [0, 1]
+              quote: false
 
   - name: dim_customer
     description: "Single row per customer ID. CUST-006 duplicates collapsed using shorter-country-code-wins tiebreaker."
@@ -40,6 +43,7 @@ models:
         tests:
           - accepted_values:
               values: [0, 1]
+              quote: false
 
   - name: dim_supplier
     description: "Single row per supplier ID. SUP-004 duplicates collapsed with preference for records with non-NULL lead_time_days."
@@ -52,6 +56,7 @@ models:
         tests:
           - accepted_values:
               values: [0, 1]
+              quote: false
 
   - name: dim_warehouse
     description: "Single row per warehouse ID. WH-001/WH001 duplicates collapsed with preference for IANA-format timezones."
